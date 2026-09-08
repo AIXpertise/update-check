@@ -1,0 +1,950 @@
+{
+  "name": "AI Onboarding – Dynamic Governance Review MVP",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyWeek"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "tbd",
+          "mode": "id"
+        },
+        "event": "fileUpdated",
+        "options": {
+          "fileType": "application/vnd.google-apps.document"
+        }
+      },
+      "id": "b48e91f3-52da-40ac-82af-94cf3511bbc2",
+      "name": "Drive – File Updated",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        1232
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Produktiver Trigger für Änderungen an Google Docs im Ordner 'Aktuell'."
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyWeek"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "tbd",
+          "mode": "id"
+        },
+        "event": "fileCreated",
+        "options": {
+          "fileType": "application/vnd.google-apps.document"
+        }
+      },
+      "id": "1592d41a-17b0-4003-a4d2-e84b20d0ce58",
+      "name": "Drive – File Created",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        1392
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Produktiver Trigger für neu ergänzte Google Docs im Ordner 'Aktuell'."
+    },
+    {
+      "parameters": {},
+      "id": "5be3e1ab-96bb-4523-8946-ee511b9359d4",
+      "name": "Manual Demo Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        1584
+      ],
+      "notes": "Für die Präsentation: startet denselben Prozess manuell."
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "tbd",
+            "mode": "id"
+          },
+          "whatToSearch": "files",
+          "includeTrashed": false
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name",
+            "mimeType",
+            "modifiedTime",
+            "webViewLink"
+          ]
+        }
+      },
+      "id": "a63d1cc0-058a-4032-a079-69ac3081035a",
+      "name": "Demo – List Current Files",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3280,
+        1584
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Demo-Pfad: liest die tatsächlichen Dateien aus 'Aktuell'."
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (!items.length) throw new Error(\"Im Ordner 'Aktuell' wurde keine Datei gefunden.\");\n\nitems.sort((a, b) => {\n  const da = new Date(a.json.modifiedTime || 0).getTime();\n  const db = new Date(b.json.modifiedTime || 0).getTime();\n  return db - da;\n});\n\nconst latest = items[0];\nreturn [{\n  json: {\n    ...latest.json,\n    trigger_mode: 'manual_demo'\n  }\n}];"
+      },
+      "id": "31ba81e9-f96e-426e-8707-ee51ab68c547",
+      "name": "Demo – Pick Most Recent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3488,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json || {};\nif (!j.id) throw new Error('Keine Trigger-Datei erhalten.');\n\nreturn [{\n  json: {\n    id: j.id,\n    name: j.name || 'Unbekanntes Dokument',\n    mimeType: j.mimeType || '',\n    modifiedTime: j.modifiedTime || null,\n    webViewLink: j.webViewLink || null,\n    trigger_mode: j.trigger_mode || 'google_drive_event'\n  }\n}];"
+      },
+      "id": "a7b15f18-187d-4ed8-8838-9c1a9bb6283b",
+      "name": "Normalize Trigger File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3728,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "871303ff-e6b1-4484-a1ba-7c8f701c041c",
+              "name": "triggerFileId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "e2fbb2cc-abf3-4570-9351-623faa2f9757",
+              "name": "triggerFileName",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "265b94b4-5142-4039-84a3-1550a10df804",
+              "name": "triggerModifiedTime",
+              "value": "={{ $json.modifiedTime }}",
+              "type": "string"
+            },
+            {
+              "id": "f14ecd54-ac48-4c95-b51c-16e6ed653dba",
+              "name": "triggerMode",
+              "value": "={{ $json.trigger_mode }}",
+              "type": "string"
+            },
+            {
+              "id": "e24c0efa-04b4-46d3-a2e6-d661c608eed7",
+              "name": "currentFolderId",
+              "value": "tbd",
+              "type": "string"
+            },
+            {
+              "id": "d12b8a0a-88b3-4612-a5c7-b52a85fd78a9",
+              "name": "archiveFolderId",
+              "value": "tbd",
+              "type": "string"
+            },
+            {
+              "id": "f29cfa21-6cc8-40d6-bae7-57c33f58b959",
+              "name": "reviewFolderId",
+              "value": "tbd",
+              "type": "string"
+            },
+            {
+              "id": "14aa22e3-cffe-4722-927f-097dee5f84b3",
+              "name": "recipientEmail",
+              "value": "tbd",
+              "type": "string"
+            },
+            {
+              "id": "d3d863f1-707d-4e35-9908-cdff5eb45c6d",
+              "name": "reviewLabel",
+              "value": "AI Onboarding – automatischer Content Review",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "af544012-fd20-4acd-b3a6-f4b280c24f4b",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3952,
+        1392
+      ],
+      "notes": "Nur Ordner-IDs und Mail-Empfänger konfigurieren. Keine Dokument-IDs."
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $('Workflow Configuration').first().json.currentFolderId }}"
+          },
+          "whatToSearch": "files",
+          "includeTrashed": false
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name",
+            "mimeType",
+            "modifiedTime",
+            "webViewLink"
+          ]
+        }
+      },
+      "id": "228b2239-3b61-4de5-a5c8-295fd9b9eb98",
+      "name": "List Current Documents",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        4192,
+        1392
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Lädt dynamisch alle aktuell gültigen Governance-Dokumente."
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "binaryPropertyName": "data",
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "de38f877-168f-42f4-83cb-a2efe5f330b8",
+      "name": "Download Current Documents",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        4416,
+        1392
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Lädt alle von 'List Current Documents' gelieferten Dateien. Google Docs → Text, Google Sheets → CSV."
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "ae92f6a4-e898-45a3-a911-890bbe359e45",
+      "name": "Extract Current Documents",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        4640,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const extracted = $input.all();\nconst meta = $('List Current Documents').all();\n\nconst docs = extracted.map((item, i) => {\n  const m = meta[i]?.json || {};\n  const text = String(item.json.text ?? item.json.data ?? '').trim();\n  return {\n    id: m.id || '',\n    name: m.name || `Datei ${i + 1}`,\n    modifiedTime: m.modifiedTime || null,\n    webViewLink: m.webViewLink || null,\n    text: text.slice(0, 16000)\n  };\n}).filter(d => d.text);\n\nreturn [{ json: { current_documents: docs } }];"
+      },
+      "id": "66412273-964e-4c19-905e-8bb20b666754",
+      "name": "Aggregate Current Corpus",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4848,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $('Workflow Configuration').first().json.archiveFolderId }}"
+          },
+          "whatToSearch": "files",
+          "includeTrashed": false
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name",
+            "mimeType",
+            "modifiedTime",
+            "webViewLink"
+          ]
+        }
+      },
+      "id": "c5dd620c-c0ee-4b57-a2cb-53b26fc46a69",
+      "name": "List Archive Documents",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        5088,
+        1392
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Lädt dynamisch den historischen Bestand. Es wird kein 1:1-Vorgänger vorausgesetzt."
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "binaryPropertyName": "data",
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "c6ecd35f-51a5-4d59-bc59-45550e43157e",
+      "name": "Download Archive Documents",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        5312,
+        1392
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Lädt alle von 'List Archive Documents' gelieferten Dateien. Google Docs → Text, Google Sheets → CSV."
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "b9fe18fc-f42b-4604-bb85-7dbda856718d",
+      "name": "Extract Archive Documents",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        5536,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const extracted = $input.all();\nconst meta = $('List Archive Documents').all();\n\nconst docs = extracted.map((item, i) => {\n  const m = meta[i]?.json || {};\n  const text = String(item.json.text ?? item.json.data ?? '').trim();\n  return {\n    id: m.id || '',\n    name: m.name || `Datei ${i + 1}`,\n    modifiedTime: m.modifiedTime || null,\n    webViewLink: m.webViewLink || null,\n    text: text.slice(0, 16000)\n  };\n}).filter(d => d.text);\n\nreturn [{ json: { archive_documents: docs } }];"
+      },
+      "id": "eee8bdf3-a28b-490b-8b9a-ce8ca65ae7b9",
+      "name": "Aggregate Archive Corpus",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5760,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $('Workflow Configuration').first().json.reviewFolderId }}"
+          },
+          "whatToSearch": "files",
+          "includeTrashed": false
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name",
+            "mimeType",
+            "modifiedTime",
+            "webViewLink"
+          ]
+        }
+      },
+      "id": "5f53590e-977e-4b71-85e2-c349592a13ab",
+      "name": "List Review Targets",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        6000,
+        1392
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Lädt dynamisch alle aktuellen Lern-/Prüfungsinhalte, die auf Anpassungsbedarf geprüft werden sollen."
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "binaryPropertyName": "data",
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "be986f06-6525-455d-9d4a-ab1b8f28f95f",
+      "name": "Download Review Targets",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        6208,
+        1392
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tbd",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Lädt alle von 'List Review Targets' gelieferten Dateien. Google Docs → Text, Google Sheets → CSV."
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "18650397-92bb-4dda-bd04-a663e26c83ca",
+      "name": "Extract Review Targets",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        6432,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const extracted = $input.all();\nconst meta = $('List Review Targets').all();\n\nconst docs = extracted.map((item, i) => {\n  const m = meta[i]?.json || {};\n  const text = String(item.json.text ?? item.json.data ?? '').trim();\n  return {\n    id: m.id || '',\n    name: m.name || `Datei ${i + 1}`,\n    modifiedTime: m.modifiedTime || null,\n    webViewLink: m.webViewLink || null,\n    text: text.slice(0, 16000)\n  };\n}).filter(d => d.text);\n\nreturn [{ json: { review_targets: docs } }];"
+      },
+      "id": "79352180-b6b2-4521-8b8b-92fb103eafc2",
+      "name": "Aggregate Review Targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6656,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Workflow Configuration').first().json;\nconst current = $('Aggregate Current Corpus').first().json.current_documents || [];\nconst archive = $('Aggregate Archive Corpus').first().json.archive_documents || [];\nconst targets = $('Aggregate Review Targets').first().json.review_targets || [];\n\nfunction corpus(title, docs) {\n  if (!docs.length) return `=== ${title} ===\\n[keine Dokumente vorhanden]`;\n  return `=== ${title} ===\\n` + docs.map((d, i) =>\n    `--- Datei ${i + 1}: ${d.name} | ID: ${d.id} ---\\n${d.text}`\n  ).join('\\n\\n');\n}\n\nconst prompt = `\nAUFGABE\nEin Google-Drive-Dokument im Ordner \"Aktuell\" wurde neu angelegt oder geändert.\nFühre einen Content-Review durch und erstelle ausschließlich Hinweise für eine menschliche Prüfung.\n\nAUSLÖSENDES DOKUMENT\nDateiname: ${cfg.triggerFileName}\nDrive-ID: ${cfg.triggerFileId}\nÄnderungszeitpunkt: ${cfg.triggerModifiedTime || 'unbekannt'}\n\nPRÜFLOGIK\n1. Identifiziere das auslösende Dokument im aktuellen Dokumentbestand.\n2. Nutze den Archivbestand als historischen Kontext. Es muss KEIN 1:1-Vorgängerdokument existieren.\n3. Erkenne relevante Abweichungen zwischen aktuellem Dokument und historischen, thematisch passenden Dokumenten, soweit dies aus den bereitgestellten Texten hervorgeht.\n4. Prüfe den GESAMTEN aktuellen Governance-Bestand auf mögliche Widersprüche, Überschneidungen, Unklarheiten oder neue Anforderungen, die durch das auslösende Dokument relevant werden.\n5. Prüfe ALLE bereitgestellten Review-Ziele auf möglichen Anpassungsbedarf.\n6. Nenne konkrete Content-/Question-IDs nur, wenn sie im bereitgestellten Material tatsächlich vorkommen.\n7. Formuliere konkrete Anpassungsvorschläge, ändere aber NICHTS automatisch.\n\nWICHTIGE GRENZEN\n- Arbeite ausschließlich mit den bereitgestellten Dokumenten.\n- Nutze kein externes Wissen.\n- Triff keine juristische oder fachliche Letztentscheidung.\n- Ein ungewöhnlicher oder offensichtlich absurder Inhalt darf als besonders prüfbedürftig markiert werden, wenn er mit bereitgestellten aktuellen/historischen Inhalten oder Schulungsinhalten kollidiert.\n- Das Archiv ist historischer Kontext und nicht automatisch aktuell gültig.\n- Wenn es keinen belastbaren Alt-Neu-Vergleich gibt, sage das.\n- Sobald ein relevanter Prüfpunkt existiert, muss overall_status = \"review_required\" sein.\n- Die Ausgabe muss exakt dem Structured Output Parser entsprechen.\n\n${corpus('AKTUELLER GOVERNANCE-BESTAND', current)}\n\n${corpus('ARCHIV / HISTORISCHER KONTEXT', archive)}\n\n${corpus('AKTUELLE LERN- UND PRÜFUNGSINHALTE / REVIEW-ZIELE', targets)}\n`.trim();\n\nreturn [{\n  json: {\n    reviewPrompt: prompt,\n    recipientEmail: cfg.recipientEmail,\n    triggerFileName: cfg.triggerFileName,\n    triggerFileId: cfg.triggerFileId,\n    triggerMode: cfg.triggerMode\n  }\n}];"
+      },
+      "id": "09db5ec8-cc93-4e70-bf40-aefee519ca5f",
+      "name": "Prepare Review Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6896,
+        1392
+      ],
+      "notes": "Baut einen allgemeinen Prompt aus den tatsächlich im Drive vorhandenen Dateien."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.reviewPrompt }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "Du bist ein interner Content-Review-Assistent. Du arbeitest ausschließlich mit bereitgestellten Quellen und Schulungsinhalten. Du änderst nichts automatisch und triffst keine finale Governance-Entscheidung. Deine Ergebnisse sind strukturierte Hinweise für eine menschliche Prüfung."
+        }
+      },
+      "id": "23efd1ab-06f4-4ec0-ba64-a87d2f779585",
+      "name": "AI Agent – Dynamic Content Review",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        7136,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-3.6-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "42e415ae-a4d8-48e3-bfea-fb504515723c",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        6944,
+        1632
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "tbd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "notes": "Das Modell kann bei Bedarf ersetzt werden."
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"overall_status\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"review_required\",\n        \"no_relevant_change\"\n      ]\n    },\n    \"trigger_document\": {\n      \"type\": \"string\"\n    },\n    \"executive_summary\": {\n      \"type\": \"string\"\n    },\n    \"historical_comparison\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"historical_document\": {\n            \"type\": \"string\"\n          },\n          \"topic\": {\n            \"type\": \"string\"\n          },\n          \"historical_statement\": {\n            \"type\": \"string\"\n          },\n          \"current_statement\": {\n            \"type\": \"string\"\n          },\n          \"classification\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"changed_rule\",\n              \"new_rule\",\n              \"removed_rule\",\n              \"possible_conflict\",\n              \"unclear\"\n            ]\n          },\n          \"severity\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"high\",\n              \"medium\",\n              \"low\"\n            ]\n          },\n          \"why_relevant\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"historical_document\",\n          \"topic\",\n          \"historical_statement\",\n          \"current_statement\",\n          \"classification\",\n          \"severity\",\n          \"why_relevant\"\n        ]\n      }\n    },\n    \"current_document_conflicts\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"documents\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"severity\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"high\",\n              \"medium\",\n              \"low\"\n            ]\n          },\n          \"finding\": {\n            \"type\": \"string\"\n          },\n          \"recommendation\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"documents\",\n          \"severity\",\n          \"finding\",\n          \"recommendation\"\n        ]\n      }\n    },\n    \"training_findings\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"content_id\": {\n            \"type\": \"string\"\n          },\n          \"content_type\": {\n            \"type\": \"string\"\n          },\n          \"severity\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"high\",\n              \"medium\",\n              \"low\"\n            ]\n          },\n          \"current_content\": {\n            \"type\": \"string\"\n          },\n          \"reason\": {\n            \"type\": \"string\"\n          },\n          \"recommendation\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\n          \"content_id\",\n          \"content_type\",\n          \"severity\",\n          \"current_content\",\n          \"reason\",\n          \"recommendation\"\n        ]\n      }\n    },\n    \"human_review_questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"disclaimer\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"overall_status\",\n    \"trigger_document\",\n    \"executive_summary\",\n    \"historical_comparison\",\n    \"current_document_conflicts\",\n    \"training_findings\",\n    \"human_review_questions\",\n    \"disclaimer\"\n  ]\n}"
+      },
+      "id": "66dfaf01-be79-45a7-acda-6cc82bb951f8",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        7360,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let review = $json.output ?? $json;\n\nif (typeof review === 'string') {\n  const cleaned = review\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/```$/i, '')\n    .trim();\n  review = JSON.parse(cleaned);\n}\n\nconst cfg = $('Workflow Configuration').first().json;\n\nconst esc = (v) => String(v ?? '')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;')\n  .replace(/\"/g, '&quot;');\n\nconst meta = {\n  high:   { label: 'HOCH', bg: '#FDECEC', fg: '#9F1D1D' },\n  medium: { label: 'MITTEL', bg: '#FFF4D8', fg: '#8A5A00' },\n  low:    { label: 'NIEDRIG', bg: '#EAF3FF', fg: '#1557A0' }\n};\n\nfunction badge(level) {\n  const m = meta[level] || meta.low;\n  return `<span style=\"display:inline-block;padding:4px 8px;border-radius:999px;background:${m.bg};color:${m.fg};font-size:11px;font-weight:700\">${m.label}</span>`;\n}\n\nfunction empty(text) {\n  return `<div style=\"padding:14px 16px;background:#F7F9FC;border:1px solid #E5EAF1;border-radius:10px;color:#596579\">${esc(text)}</div>`;\n}\n\nconst historical = Array.isArray(review.historical_comparison) && review.historical_comparison.length\n  ? review.historical_comparison.map(x => `\n    <div style=\"padding:16px;border:1px solid #E5EAF1;border-radius:12px;margin-bottom:12px\">\n      <div style=\"display:flex;justify-content:space-between;gap:12px\">\n        <strong style=\"color:#102A56\">${esc(x.topic)}</strong>${badge(x.severity)}\n      </div>\n      <div style=\"margin-top:6px;font-size:12px;color:#667085\">${esc(x.historical_document)} · ${esc(x.classification)}</div>\n      <div style=\"margin-top:10px;font-size:13px\"><strong>Historisch:</strong> ${esc(x.historical_statement)}</div>\n      <div style=\"margin-top:6px;font-size:13px\"><strong>Aktuell:</strong> ${esc(x.current_statement)}</div>\n      <div style=\"margin-top:8px;font-size:13px;line-height:1.5\"><strong>Relevanz:</strong> ${esc(x.why_relevant)}</div>\n    </div>`).join('')\n  : empty('Kein belastbarer historischer Vergleich erforderlich oder möglich.');\n\nconst conflicts = Array.isArray(review.current_document_conflicts) && review.current_document_conflicts.length\n  ? review.current_document_conflicts.map(x => `\n    <div style=\"padding:16px;border-left:4px solid #D14343;background:#FFF7F7;border-radius:10px;margin-bottom:12px\">\n      <div>${badge(x.severity)} <strong style=\"margin-left:8px;color:#102A56\">${esc((x.documents || []).join(' ↔ '))}</strong></div>\n      <div style=\"margin-top:9px;font-size:13px;line-height:1.55\"><strong>Befund:</strong> ${esc(x.finding)}</div>\n      <div style=\"margin-top:6px;font-size:13px;line-height:1.55\"><strong>Vorschlag:</strong> ${esc(x.recommendation)}</div>\n    </div>`).join('')\n  : empty('Keine konkreten Widersprüche im aktuellen Bestand erkannt.');\n\nconst training = Array.isArray(review.training_findings) && review.training_findings.length\n  ? review.training_findings.map(x => `\n    <div style=\"padding:16px;border:1px solid #E5EAF1;border-radius:12px;margin-bottom:12px\">\n      <div style=\"display:flex;justify-content:space-between;gap:12px\">\n        <div><strong style=\"color:#102A56\">${esc(x.content_id)}</strong>\n        <span style=\"font-size:12px;color:#667085\"> · ${esc(x.content_type)}</span></div>\n        ${badge(x.severity)}\n      </div>\n      ${x.current_content ? `<div style=\"margin-top:10px;padding:10px 12px;background:#F7F9FC;border-radius:8px;font-size:13px\"><strong>Aktueller Inhalt:</strong> ${esc(x.current_content)}</div>` : ''}\n      <div style=\"margin-top:10px;font-size:13px;line-height:1.55\"><strong>Prüfgrund:</strong> ${esc(x.reason)}</div>\n      <div style=\"margin-top:6px;font-size:13px;line-height:1.55\"><strong>Anpassungsvorschlag:</strong> ${esc(x.recommendation)}</div>\n    </div>`).join('')\n  : empty('Keine konkreten Lern- oder Prüfungsstellen zur Anpassungsprüfung erkannt.');\n\nconst questions = Array.isArray(review.human_review_questions) && review.human_review_questions.length\n  ? `<ul style=\"margin:8px 0 0 20px;padding:0\">${review.human_review_questions.map(q => `<li style=\"margin:7px 0\">${esc(q)}</li>`).join('')}</ul>`\n  : '<p style=\"margin:8px 0 0\">Keine zusätzlichen Review-Fragen.</p>';\n\nconst needsReview = review.overall_status === 'review_required';\nconst statusLabel = needsReview ? 'MENSCHLICHE PRÜFUNG ERFORDERLICH' : 'KEIN RELEVANTER ANPASSUNGSBEDARF';\nconst statusBg = needsReview ? '#FFF0F0' : '#ECF8F1';\nconst statusFg = needsReview ? '#9F1D1D' : '#146B3A';\n\nconst html = `\n<!doctype html>\n<html>\n<body style=\"margin:0;padding:0;background:#F4F7FA;font-family:Arial,Helvetica,sans-serif;color:#182230\">\n<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:#F4F7FA;padding:24px 10px\">\n<tr><td align=\"center\">\n<table role=\"presentation\" width=\"720\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:100%;max-width:720px;background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E5EAF1\">\n<tr><td style=\"background:#006BB6;padding:24px 28px;color:#FFFFFF\">\n<div style=\"font-size:12px;letter-spacing:.08em;font-weight:700;opacity:.9\">ZUKUNFTSFIRMA · AI ONBOARDING</div>\n<h1 style=\"font-size:24px;line-height:1.25;margin:8px 0 0\">Automatischer Content-Review</h1>\n</td></tr>\n<tr><td style=\"padding:26px 28px\">\n<div style=\"display:inline-block;padding:7px 10px;border-radius:999px;background:${statusBg};color:${statusFg};font-size:11px;font-weight:700\">${statusLabel}</div>\n<h2 style=\"font-size:19px;color:#102A56;margin:18px 0 8px\">${esc(review.trigger_document || cfg.triggerFileName)}</h2>\n<p style=\"font-size:14px;line-height:1.6;color:#4A5568;margin:0\">${esc(review.executive_summary)}</p>\n\n<h3 style=\"font-size:16px;color:#006BB6;margin:30px 0 12px\">1. Historischer Vergleich</h3>\n${historical}\n\n<h3 style=\"font-size:16px;color:#006BB6;margin:30px 0 12px\">2. Mögliche Widersprüche im aktuellen Bestand</h3>\n${conflicts}\n\n<h3 style=\"font-size:16px;color:#006BB6;margin:30px 0 12px\">3. Zu prüfende Lern- und Prüfungsinhalte</h3>\n${training}\n\n<h3 style=\"font-size:16px;color:#006BB6;margin:30px 0 12px\">4. Fragen für die menschliche Prüfung</h3>\n<div style=\"padding:15px 18px;background:#F2F7FD;border-radius:10px;font-size:13px;line-height:1.55\">${questions}</div>\n\n<div style=\"margin-top:30px;padding:16px 18px;background:#F7F9FC;border-radius:10px;color:#667085;font-size:12px;line-height:1.55\">\n<strong>Hinweis:</strong> ${esc(review.disclaimer || 'Automatisierter Review-Hinweis. Es wurden keine Inhalte automatisch verändert. Die finale Entscheidung liegt bei einem Menschen.')}\n</div>\n</td></tr>\n</table>\n</td></tr>\n</table>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    recipientEmail: cfg.recipientEmail,\n    subject: `[AI-Onboarding] Review – ${review.trigger_document || cfg.triggerFileName}`,\n    html,\n    review\n  }\n}];"
+      },
+      "id": "1f52fbeb-0a56-48c6-a745-546552bcb375",
+      "name": "Build HTML Review Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7616,
+        1392
+      ],
+      "notes": "Formatiert den strukturierten KI-Output als HTML statt unformatiertem Fließtext."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.recipientEmail }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Zukunftsfirma AI Onboarding"
+        }
+      },
+      "id": "b9086b24-75fa-4ae2-a214-832879bf0b76",
+      "name": "Send Review Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7888,
+        1392
+      ],
+      "webhookId": "37e0df6b-e3b1-436f-b45c-3a8125388e24",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "tbd",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "E-Mail-Typ ist HTML."
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemma-4-26b-it",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        7168,
+        1632
+      ],
+      "id": "12cfdbbc-38cb-468f-ac76-13a93961deb7",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "tbd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Drive – File Updated": {
+      "main": [
+        [
+          {
+            "node": "Normalize Trigger File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive – File Created": {
+      "main": [
+        [
+          {
+            "node": "Normalize Trigger File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Demo Trigger": {
+      "main": [
+        [
+          {
+            "node": "Demo – List Current Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Demo – List Current Files": {
+      "main": [
+        [
+          {
+            "node": "Demo – Pick Most Recent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Demo – Pick Most Recent": {
+      "main": [
+        [
+          {
+            "node": "Normalize Trigger File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Trigger File": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "List Current Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Current Documents": {
+      "main": [
+        [
+          {
+            "node": "Download Current Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Current Documents": {
+      "main": [
+        [
+          {
+            "node": "Extract Current Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Current Documents": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Current Corpus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Current Corpus": {
+      "main": [
+        [
+          {
+            "node": "List Archive Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Archive Documents": {
+      "main": [
+        [
+          {
+            "node": "Download Archive Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Archive Documents": {
+      "main": [
+        [
+          {
+            "node": "Extract Archive Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Archive Documents": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Archive Corpus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Archive Corpus": {
+      "main": [
+        [
+          {
+            "node": "List Review Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Review Targets": {
+      "main": [
+        [
+          {
+            "node": "Download Review Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Review Targets": {
+      "main": [
+        [
+          {
+            "node": "Extract Review Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Review Targets": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Review Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Review Targets": {
+      "main": [
+        [
+          {
+            "node": "Prepare Review Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Review Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent – Dynamic Content Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent – Dynamic Content Review": {
+      "main": [
+        [
+          {
+            "node": "Build HTML Review Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build HTML Review Email": {
+      "main": [
+        [
+          {
+            "node": "Send Review Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent – Dynamic Content Review",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent – Dynamic Content Review",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent – Dynamic Content Review",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cb32a69f-d267-415f-9537-232e3ced64ff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "25b49abc1abc962e0a2da73be618182ddf1de96d9c56558f3eb2ee7407401301"
+  },
+  "nodeGroups": [],
+  "id": "tbd",
+  "tags": []
+}
